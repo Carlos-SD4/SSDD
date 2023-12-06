@@ -1,0 +1,71 @@
+{
+  "usuarios": [
+    {
+      "nombre": "Carlos",
+      "id": 1,
+      "directorios": [
+        {
+          "nombre": "/Carlos",
+          "padre": null,
+          "archivos": [
+            {
+              "nombre": "Tareas.txt",
+              "blobid": "765874"
+            }
+          ]
+        },
+        {
+          "nombre": "/Tareas",
+          "padre": "/Carlos",
+          "archivos": [
+            {
+              "nombre": "Archivo1.txt",
+              "blobid": "unique_blobid_1"
+            },
+            {
+              "nombre": "Archivo2.txt",
+              "blobid": "unique_blobid_2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nombre": "Luis",
+      "id": 2,
+      "directorios": [
+        {
+          "nombre": "/Luis",
+          "padre": null,
+          "archivos": []
+        },
+        {
+          "nombre": "Juegos",
+          "padre": "/Luis",
+          "archivos": [
+            {
+              "nombre": "Juego1.exe",
+              "blobid": "unique_blobid_3"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nombre": "Julian",
+      "id": 3,
+      "directorios": [
+        {
+          "nombre": "/Julian",
+          "padre": null,
+          "archivos": [
+            {
+              "nombre": "Documento.pdf",
+              "blobid": "unique_blobid_4"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
