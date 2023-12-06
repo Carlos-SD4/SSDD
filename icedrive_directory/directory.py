@@ -40,9 +40,39 @@ class Directory(IceDrive.Directory):
         
     def createChild(self, name: str, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
         """Create a new child directory and returns its proxy."""
+        try:
+            if name in self.childs:
+                raise ChildAlreadyExists(childName=name, path=self.name)
+
+            child_directory = Directory("/" + name, user_name=self.user_name)
+            child_directory.parent = self
+            self.childs["/" + name] = child_directory
+
+            parent_directory = self.getChild("/")
+            if parent_directory:
+                user_data = self._load_user_data()
+                user = self._get_user(user_data)
+                self._update_directory_info(user, "/" + name, self.name)
+
+                self._save_user_data(user_data)
+                return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID(child_directory))
+            else:
+                raise ChildNotExists(childName=self.name, path="/")
+        except (ChildNotExists, ChildAlreadyExists) as e:
+            print(f"Error creating child directory: {e}")
 
     def removeChild(self, name: str, current: Ice.Current = None) -> None:
         """Remove the child directory with the given name if exists."""
+        child_directory = self.childs["/" + name]
+        if child_directory:
+            del self.childs["/" + name]
+
+            user_data = self._load_user_data()
+            user = self._get_user(user_data)
+            if user:
+                user["directorios"] = [d for d in user.get("directorios", []) if d["nombre"] != "/" + name]
+
+            self._save_user_data(user_data)
 
     def getFiles(self, current: Ice.Current = None) -> List[str]:
         """Return a list of the files linked inside the current directory."""
