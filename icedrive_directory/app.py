@@ -6,7 +6,7 @@ from typing import List
 
 import Ice
 
-from .directory import Directory, DirectoryService
+from .directory import DirectoryService
 
 class DirectoryApp(Ice.Application):
     """Implementation of the Ice.Application for the Directory service."""
