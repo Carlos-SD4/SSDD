@@ -80,14 +80,52 @@ class Directory(IceDrive.Directory):
 
     def getBlobId(self, filename: str, current: Ice.Current = None) -> str:
         """Return the "blob id" for a given file name inside the directory."""
+        try:
+            user_data = self._load_user_data()
+            user = self._get_user(user_data)
+            if user:
+                for directorio_info in user.get("directorios", []):
+                    if directorio_info["nombre"] == self.name:
+                        archivos = directorio_info.get("archivos", [])
+                        for archivo in archivos:
+                            if archivo["nombre"] == filename:
+                                return archivo["blobid"]
+                raise FileNotFound(filename=filename)
+            else:
+                raise FileNotFound(filename=filename)
+        except FileNotFound as e:
+            print(f"Error getting blob id for file: {e}")
+            return ""
 
     def linkFile(
         self, filename: str, blob_id: str, current: Ice.Current = None
     ) -> None:
         """Link a file to a given blob_id."""
+        if filename in self.files:
+            raise IceDrive.FileAlreadyExists(filename)
+        self.files[filename] = blob_id
+        self._update_file_info(filename, blob_id)
 
     def unlinkFile(self, filename: str, current: Ice.Current = None) -> None:
         """Unlink (remove) a filename from the current directory."""
+        try:
+            if filename not in self.files:
+                raise FileNotFound(filename=filename)
+
+            del self.files[filename]
+
+            user_data = self._load_user_data()
+            user = self._get_user(user_data)
+            if user:
+                for directorio_info in user.get("directorios", []):
+                    if directorio_info["nombre"] == self.name:
+                        archivos = directorio_info.get("archivos", [])
+                        archivos = [archivo for archivo in archivos if archivo["nombre"] != filename]
+                        directorio_info["archivos"] = archivos
+                self._save_user_data(user_data)
+        except FileNotFound as e:
+            print(f"Error unlinking file: {e}")
+
 
 
 class DirectoryService(IceDrive.DirectoryService):
