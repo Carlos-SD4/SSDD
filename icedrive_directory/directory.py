@@ -8,13 +8,21 @@ import IceDrive
 
 class Directory(IceDrive.Directory):
     """Implementation of the IceDrive.Directory interface."""
-        def __init__(self, name: str, user_name: str):
+    def __init__(self, name: str, user_name: str):
         self.user_name = user_name
         self.name = name
         self.parent = None
         self.childs = {}
         self.files = {}
+    
+    def _load_user_data(self):
+        with open(self.user_data_file, "r") as f:
+            return json.load(f)
 
+    def _save_user_data(self, user_data):
+        with open(self.user_data_file, "w") as f:
+            json.dump(user_data, f, indent=2)
+    
     def getParent(self, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
         """Return the proxy to the parent directory, if it exists. None in other case."""
         if self.parent is None:
