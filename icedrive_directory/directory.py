@@ -103,7 +103,7 @@ class DirectoryService(IceDrive.DirectoryService):
         with open(self.file_path, "w") as file:
             json.dump(data, file, indent=2)
 
-        def getRootDirectoryForUser(self, user: str) -> Directory:
+    def getRootDirectoryForUser(self, user: str) -> Directory:
         with open(self.file_path, "r") as file:
             data = json.load(file)
 
