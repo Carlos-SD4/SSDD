@@ -22,6 +22,19 @@ class Directory(IceDrive.Directory):
     def _save_user_data(self, user_data):
         with open(self.user_data_file, "w") as f:
             json.dump(user_data, f, indent=2)
+
+    def _get_user(self, user_data):
+        return next((u for u in user_data["usuarios"] if u["nombre"] == self.user_name), None)
+
+    def _update_directory_info(self, user, name, parent_name=None):
+        if user:
+            if "directorios" not in user:
+                user["directorios"] = []
+            user["directorios"].append({
+                "nombre": name,
+                "padre": parent_name,
+                "archivos": []
+            })
     
     def getParent(self, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
         """Return the proxy to the parent directory, if it exists. None in other case."""
@@ -125,6 +138,21 @@ class Directory(IceDrive.Directory):
                 self._save_user_data(user_data)
         except FileNotFound as e:
             print(f"Error unlinking file: {e}")
+            
+    def _update_file_info(self, filename, blob_id):
+        user_data = self._load_user_data()
+        user = self._get_user(user_data)
+        if user:
+            for directorio_info in user.get("directorios", []):
+                if directorio_info["nombre"] == self.name:
+                    archivos = directorio_info.get("archivos", [])
+                    archivos.append({
+                        "nombre": filename,
+                        "blobid": blob_id
+                    })
+                    directorio_info["archivos"] = archivos
+
+            self._save_user_data(user_data)
 
 
 
