@@ -67,35 +67,35 @@ class DirectoryService(IceDrive.DirectoryService):
         if not self.doesUserExist(user):
             self.createUser(user)
 
-        def doesUserExist(self, user: str) -> bool:
-            try:
-                with open(self.file_path, "r") as file:
-                    data = json.load(file)
-                    usuarios = data.get("usuarios", [])
-                    existe = any(usuario.get("nombre") == user for usuario in usuarios)
-                    return existe
+    def doesUserExist(self, user: str) -> bool:
+        try:
+            with open(self.file_path, "r") as file:
+                data = json.load(file)
+                usuarios = data.get("usuarios", [])
+                existe = any(usuario.get("nombre") == user for usuario in usuarios)
+                return existe
 
-            except FileNotFoundError:
-                return False
+        except FileNotFoundError:
+            return False
 
-        def createUser(self, user: str) -> None:
-            try:
-                with open(self.file_path, "r") as file:
-                    data = json.load(file)
-            except FileNotFoundError:
-                data = {}
-            nuevo_usuario = {
-                "nombre": user,
-                "id": len(data.get("usuarios", [])) + 1,  # Asignar un nuevo ID
-                "directorios": [
-                    {
-                        "nombre": f"/{user}",
-                        "padre": None,
-                        "archivos": []
-                    }
-                ]
-            }
-            data.setdefault("usuarios", []).append(nuevo_usuario)
-            with open(self.file_path, "w") as file:
-                json.dump(data, file, indent=2)
+    def createUser(self, user: str) -> None:
+        try:
+            with open(self.file_path, "r") as file:
+                data = json.load(file)
+        except FileNotFoundError:
+            data = {}
+        nuevo_usuario = {
+            "nombre": user,
+            "id": len(data.get("usuarios", [])) + 1,  # Asignar un nuevo ID
+            "directorios": [
+                {
+                    "nombre": f"/{user}",
+                    "padre": None,
+                    "archivos": []
+                }
+            ]
+        }
+        data.setdefault("usuarios", []).append(nuevo_usuario)
+        with open(self.file_path, "w") as file:
+            json.dump(data, file, indent=2)
         
