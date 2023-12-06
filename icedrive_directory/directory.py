@@ -25,10 +25,12 @@ class Directory(IceDrive.Directory):
 
     def getChilds(self, current: Ice.Current = None) -> List[str]:
         """Return a list of names of the directories contained in the directory."""
+        return list(self.childs.keys())
 
     def getChild(self, name: str, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
         """Return the proxy to one specific directory inside the current one."""
-
+        return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID(self.childs.get(name)))
+        
     def createChild(self, name: str, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
         """Create a new child directory and returns its proxy."""
 
@@ -55,3 +57,4 @@ class DirectoryService(IceDrive.DirectoryService):
 
     def getRoot(self, user: str, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
         """Return the proxy for the root directory of the given user."""
+        
