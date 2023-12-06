@@ -1,9 +1,8 @@
 """Module for servants implementations."""
 
 from typing import List
-
+import json
 import Ice
-
 import IceDrive
 
 
@@ -39,6 +38,7 @@ class Directory(IceDrive.Directory):
 
     def getFiles(self, current: Ice.Current = None) -> List[str]:
         """Return a list of the files linked inside the current directory."""
+        return list(self.files.keys())
 
     def getBlobId(self, filename: str, current: Ice.Current = None) -> str:
         """Return the "blob id" for a given file name inside the directory."""
@@ -54,7 +54,48 @@ class Directory(IceDrive.Directory):
 
 class DirectoryService(IceDrive.DirectoryService):
     """Implementation of the IceDrive.Directory interface."""
+    
+    file_path = 'user_data.json'
 
+    def __init__(self):
+        self.user_directories: List[str, Directory] = {}
+        
     def getRoot(self, user: str, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
         """Return the proxy for the root directory of the given user."""
+        user_directory = self.user_directories.get(user)
+        if not user_directory:
+        if not self.doesUserExist(user):
+            self.createUser(user)
+
+        def doesUserExist(self, user: str) -> bool:
+            try:
+                with open(self.file_path, "r") as file:
+                    data = json.load(file)
+                    usuarios = data.get("usuarios", [])
+                    existe = any(usuario.get("nombre") == user for usuario in usuarios)
+                    return existe
+
+            except FileNotFoundError:
+                return False
+
+        def createUser(self, user: str) -> None:
+            try:
+                with open(self.file_path, "r") as file:
+                    data = json.load(file)
+            except FileNotFoundError:
+                data = {}
+            nuevo_usuario = {
+                "nombre": user,
+                "id": len(data.get("usuarios", [])) + 1,  # Asignar un nuevo ID
+                "directorios": [
+                    {
+                        "nombre": f"/{user}",
+                        "padre": None,
+                        "archivos": []
+                    }
+                ]
+            }
+            data.setdefault("usuarios", []).append(nuevo_usuario)
+            with open(self.file_path, "w") as file:
+                json.dump(data, file, indent=2)
         
