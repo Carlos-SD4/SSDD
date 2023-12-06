@@ -64,8 +64,9 @@ class DirectoryService(IceDrive.DirectoryService):
         """Return the proxy for the root directory of the given user."""
         user_directory = self.user_directories.get(user)
         if not user_directory:
-        if not self.doesUserExist(user):
-            self.createUser(user)
+            if not self.doesUserExist(user):
+                self.createUser(user)
+        return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID(user_directory))
 
     def doesUserExist(self, user: str) -> bool:
         try:
