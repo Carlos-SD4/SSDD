@@ -66,6 +66,9 @@ class DirectoryService(IceDrive.DirectoryService):
         if not user_directory:
             if not self.doesUserExist(user):
                 self.createUser(user)
+            user_directory = self.getRootDirectoryForUser(user)
+            self.user_directories[user] = user_directory
+
         return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID(user_directory))
 
     def doesUserExist(self, user: str) -> bool:
@@ -99,4 +102,41 @@ class DirectoryService(IceDrive.DirectoryService):
         data.setdefault("usuarios", []).append(nuevo_usuario)
         with open(self.file_path, "w") as file:
             json.dump(data, file, indent=2)
+
+        def getRootDirectoryForUser(self, user: str) -> Directory:
+        with open(self.file_path, "r") as file:
+            data = json.load(file)
+
+        for usuario in data["usuarios"]:
+            if usuario["nombre"] == user:
+                root_directory_info = usuario["directorios"][0]
+                root_directory = Directory(root_directory_info["nombre"], user)
+                return self.loadDirectoryInfo(root_directory, usuario, data, user)
+
+    def loadDirectoryInfo(self, directory: Directory, user_info: dict, data: dict, user: str, is_root: bool = True) -> Directory:
+        user_directories = user_info.get("directorios", [])
+
+        for item_info in user_directories:
+            item_name = item_info["nombre"]
+            item_archivos = item_info.get("archivos", [])
+
+            if item_info["padre"] is None and is_root:
+                for archivo_info in item_archivos:
+                    archivo_nombre = archivo_info["nombre"]
+                    archivo_blobid = archivo_info["blobid"]
+                    directory.files[archivo_nombre] = archivo_blobid
+
+            elif item_info["padre"] == directory.name:
+                child_directory = Directory(item_name, user)
+                child_directory.parent = directory
+                directory.childs[item_name] = child_directory
+
+                for archivo_info in item_archivos:
+                    archivo_nombre = archivo_info["nombre"]
+                    archivo_blobid = archivo_info["blobid"]
+                    child_directory.files[archivo_nombre] = archivo_blobid
+
+                self.loadDirectoryInfo(child_directory, user_info, data, user, is_root=False)
+
+        return directory
         
