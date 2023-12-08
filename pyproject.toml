@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "icedrive-directory"
 version = "0.0.1"
 authors = [
-  { name="Put Your name Here", email="youremailaddress@uclm.es" },
+  { name="Carlos Sanchez Diaz", email="carlos.sanchez74@alu.uclm.es" },
 ]
 description = "Implementation of IceDrive Directory service"
 readme = "README.md"
@@ -26,7 +26,7 @@ tests = ["pytest"]
 linters = ["black", "ruff", "pydocstyle"]
 
 [project.urls]
-"Homepage" = "https://github.com/YOURUSERNAME/YOURREPOSITORY"
+"Homepage" = "https://github.com/Carlos-SD4/SSDD.git"
 
 [project.scripts]
 icedrive-directory = "icedrive_directory.app:main"

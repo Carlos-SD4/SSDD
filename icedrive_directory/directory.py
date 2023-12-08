@@ -14,7 +14,6 @@ class Directory(IceDrive.Directory):
         self.parent = None
         self.childs = {}
         self.files = {}
-    
     def _load_user_data(self):
         with open(self.user_data_file, "r") as f:
             return json.load(f)
