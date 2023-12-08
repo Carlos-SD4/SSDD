@@ -13,12 +13,12 @@ class DirectoryApp(Ice.Application):
 
     def run(self, args: List[str]) -> int:
         """Execute the code for the DirectoryApp class."""
-        adapter = self.communicator().createObjectAdapter("DirectoryAdapter") 
+        adapter = self.communicator().createObjectAdapter("DirectoryAdapter")
 
         directory_service_impl = DirectoryService()
 
         directory_service_proxy = adapter.addWithUUID(directory_service_impl)
-        adapter.activate() 
+        adapter.activate()
 
         logging.info("DirectoryService Proxy: %s", directory_service_proxy)
 
