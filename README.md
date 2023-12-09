@@ -30,21 +30,21 @@ Para una correcta ejecución del proyecto, distinguimos entre el lado del servid
 
 Lado del Servidor:
 
-    Ejecute el programa del servidor con el siguiente comando:
+Ejecute el programa del servidor con el siguiente comando:
 
     icedrive-directory --Ice.Config=config/directory.config
 
-    Asegúrese de estar en el directorio correcto. Al ejecutarlo, obtendrá el proxy de la interfaz DirectoryService.
+Asegúrese de estar en el directorio correcto. Al ejecutarlo, obtendrá el proxy de la interfaz DirectoryService.
 
 Lado del Cliente:
 
-    Abra otra ventana de terminal y vaya al directorio donde se encuentra el archivo del cliente, como es en mi caso, "my_directory.py".
+Abra otra ventana de terminal y vaya al directorio donde se encuentra el archivo del cliente, como es en mi caso, "my_directory.py".
 
-    Ejecute el siguiente comando:
+Ejecute el siguiente comando:
 
     python3 my_directory.py 'proxy_del_servidor'
 
-    Coloque el proxy proporcionado por el servidor entre las comillas simples para conectarse a su interfaz.
+Coloque el proxy proporcionado por el servidor entre las comillas simples para conectarse a su interfaz.
 
 Con estos pasos, el cliente dispondrá de un menú interactivo que le permite realizar diversas acciones típicas de un gestor de archivos con estructura de árbol.
 
