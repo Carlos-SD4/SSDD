@@ -5,6 +5,7 @@
 # pylint: disable=unused-argument
 # pylint: disable=no-self-argument
 # pylint: disable=invalid-name
+# pylint: disable=no-name-in-module
 
 from typing import List
 import json
@@ -270,5 +271,3 @@ class DirectoryService(IceDrive.DirectoryService):
 
                 self.load_directory_info(child_directory, user_info, user, is_root=False)
         return directory
-
-
