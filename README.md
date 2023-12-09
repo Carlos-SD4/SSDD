@@ -4,9 +4,9 @@ This repository contains the project template for the Directory service proposed
 of Distributed Systems in the course 2023-2024.
 
 ## Alumno
-ALumno: Carlos Sánchez Díaz
-Correo: carlos.sanchez74@alu.uclm.es
-Grupo de laboratorio: C1
+-ALumno: Carlos Sánchez Díaz
+-Correo: carlos.sanchez74@alu.uclm.es
+-Grupo de laboratorio: C1
 
 ## Contenido del proyecto
 
