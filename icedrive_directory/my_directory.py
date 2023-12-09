@@ -4,7 +4,6 @@ import sys
 import Ice
 import IceDrive
 
-
 class DirectoryClient:
     '''Clase que implementa el cliente de directorio de IceDrive'''
     def __init__(self):
@@ -41,10 +40,11 @@ class DirectoryClient:
             print("6. Crear un nuevo archivo")
             print("7. Eliminar un archivo")
             print("8. Obtener directorio padre")
-            print("9. Obtener el blobid de algun archivo")
-            print("10. Salir")
+            print("9. Mover al directorio padre")
+            print("10. Obtener el blobid de algun archivo")
+            print("11. Salir")
 
-            choice = input("Selecciona una opción (1-10): ")
+            choice = input("Selecciona una opción (1-11): ")
 
             if choice == "1":
                 print("Contenido del directorio:")
@@ -86,15 +86,19 @@ class DirectoryClient:
                 print("El padre es:",current_directory.getParent())
 
             elif choice == "9":
+                current_directory = current_directory.getParent()
+                print("Cambiado al directorio padre.")
+
+            elif choice == "10":
                 filename = input("Ingrese el nombre del archivo: ")
                 print("El blob id de",filename,"es:",current_directory.getBlobId(filename))
 
-            elif choice == "10":
+            elif choice == "11":
                 print("Saliendo del programa.")
                 sys.exit(0)
 
             else:
-                print("Opción no válida. Por favor, elige una opción del 1 al 10.")
+                print("Opción no válida. Por favor, elige una opción del 1 al 11.")
 
 
 if __name__ == '__main__':
