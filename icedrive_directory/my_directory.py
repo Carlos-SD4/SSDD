@@ -1,12 +1,17 @@
+'''Cliente de directorio para el servicio de directorio de IceDrive'''
+
+import sys
 import Ice
 import IceDrive
-import sys
+
 
 class DirectoryClient:
+    '''Clase que implementa el cliente de directorio de IceDrive'''
     def __init__(self):
         self.communicator = Ice.initialize()
 
     def run(self, args):
+        '''Método que inicializa el cliente de directorio'''
         try:
             proxy = self.communicator.stringToProxy(args[1])
             directory_service = IceDrive.DirectoryServicePrx.checkedCast(proxy)
@@ -25,9 +30,10 @@ class DirectoryClient:
                 self.communicator.destroy()
 
     def menu(self, current_directory):
+        '''Método que implementa el menú de opciones del cliente de directorio'''
         while True:
             print("\n")
-            print("1. Mostrar contenido del directorio")
+            print("1. Mostrar subdirectorios del directorio")
             print("2. Crear un nuevo directorio")
             print("3. Eliminar un directorio")
             print("4. Mostrar archivos del directorio actual")
@@ -80,7 +86,7 @@ class DirectoryClient:
                 print("El padre es:",current_directory.getParent())
 
             elif choice == "9":
-                filename = input("Ingrese el nombre del archivo del que quieres obtener el blobid: ")
+                filename = input("Ingrese el nombre del archivo: ")
                 print("El blob id de",filename,"es:",current_directory.getBlobId(filename))
 
             elif choice == "10":
@@ -94,6 +100,3 @@ class DirectoryClient:
 if __name__ == '__main__':
     app = DirectoryClient()
     app.run(sys.argv)
-
-
-
