@@ -244,7 +244,7 @@ class DirectoryService(IceDrive.DirectoryService):
         return None
 
     def load_directory_info(self, directory: Directory, user_info: dict,
-                        user_data: dict, user: str, is_root: bool = True) -> Directory:
+                        user: str, is_root: bool = True) -> Directory:
         """Load directory information from user data."""
         user_directories = user_info.get("directorios", [])
 
@@ -268,7 +268,7 @@ class DirectoryService(IceDrive.DirectoryService):
                     archivo_blobid = archivo_info["blobid"]
                     child_directory.files[archivo_nombre] = archivo_blobid
 
-                self.load_directory_info(child_directory, user_info, user_data, user, is_root=False)
+                self.load_directory_info(child_directory, user_info, user, is_root=False)
         return directory
 
 
