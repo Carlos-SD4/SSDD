@@ -57,5 +57,11 @@ Coloque el proxy proporcionado por el servidor entre las comillas simples para c
 
 Con estos pasos, el cliente dispondrá de un menú interactivo que le permite realizar diversas acciones típicas de un gestor de archivos con estructura de árbol.
 
+Ademas de esto previamente debes de ejecutar:
+
+    slice2py icedrive.ice
+
+Cuya funcion principal es generar código fuente en Python a partir del archivo Slice. Su función principal es traducir las definiciones de interfaz en archivos Slice a código fuente en Python.
+
 
 
