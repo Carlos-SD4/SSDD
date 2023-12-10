@@ -3,6 +3,7 @@
 # pylint: disable=import-error
 # pylint: disable=no-member
 # pylint: disable=unused-argument
+# pylint: disable=no-self-use
 # pylint: disable=no-self-argument
 # pylint: disable=invalid-name
 # pylint: disable=no-name-in-module
@@ -11,7 +12,7 @@ from typing import List
 import json
 import Ice
 import IceDrive
-from IceDrive import ChildNotExists,ChildAlreadyExists,FileNotFound,RootHasNoParent
+
 
 class Directory(IceDrive.Directory):
     """Implementation of the IceDrive.Directory interface."""
@@ -25,108 +26,8 @@ class Directory(IceDrive.Directory):
         self.user_data_file = "user_data.json"
 
     def _load_user_data(self):
-        with open(self.user_data_file, "r", encoding="utf-8") as file:
-            return json.load(file)
-
-    def _save_user_data(self, user_data):
-        with open(self.user_data_file, "w", encoding="utf-8") as file:
-            json.dump(user_data, file, indent=2)
-
-    def _get_user(self, user_data):
-        return next((u for u in user_data["usuarios"] if u["nombre"] == self.user_name), None)
-
-    def _update_directory_info(user, name, parent_name=None):
-        if user:
-            if "directorios" not in user:
-                user["directorios"] = []
-            user["directorios"].append({
-                "nombre": name,
-                "padre": parent_name,
-                "archivos": []
-            })
-
-    def getParent(self, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
-        """Return the proxy to the parent directory, if it exists. None in other case."""
-        if self.parent is None:
-            raise RootHasNoParent()
-        return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID(self.parent))
-
-    def getChilds(self, current: Ice.Current = None) -> List[str]:
-        """Return a list of names of the directories contained in the directory."""
-        return list(self.childs.keys())
-
-    def getChild(self, name: str, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
-        """Return the proxy to one specific directory inside the current one."""
-        if name not in self.childs:
-            raise ChildNotExists(f"Child with name '{name}' does not exist.")
-        return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID
-                                                (self.childs.get(name)))
-
-
-    def createChild(self, name: str, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
-        """Create a new child directory and returns its proxy."""
-        try:
-            if name in self.childs:
-                raise ChildAlreadyExists(childName=name, path=self.name)
-
-            child_directory = Directory("/" + name, user_name=self.user_name)
-            child_directory.parent = self
-            self.childs["/" + name] = child_directory
-
-            parent_directory = self.getChild("/")
-            if parent_directory:
-                user_data = self._load_user_data()
-                user = self._get_user(user_data)
-                self._update_directory_info(user, "/" + name)
-
-                self._save_user_data(user_data)
-                return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID
-                                                        (child_directory))
-        except (ChildNotExists, ChildAlreadyExists) as e:
-            print(f"Error creating child directory: {e}")
-        return None
-
-    def removeChild(self, name: str, current: Ice.Current = None) -> None:
-        """Remove the child directory with the given name if exists."""
-        child_directory = self.childs["/" + name]
-        if child_directory:
-            del self.childs["/" + name]
-
-            user_data = self._load_user_data()
-            user = self._get_user(user_data)
-            if user:
-                user["directorios"] = [d for d in user.get("directorios", [])
-                                    if d["nombre"] != "/" + name]
-
-            self._save_user_data(user_data)
-
-    def getFiles(self, current: Ice.Current = None) -> List[str]:
-        """Return a list of the files linked inside the current directory."""
-        return list(self.files.keys())
-
-    def getBlobId(self, filename: str, current: Ice.Current = None) -> str:
-        """Return the "blob id" for a given file name inside the directory."""
-        try:
-            user_data = self._load_user_data()
-            user = self._get_user(user_data)
-
-            if not user:
-                raise FileNotFound(filename=filename)
-
-            for directorio_info in user.get("directorios", []):
-                if directorio_info["nombre"] == self.name:
-                    archivos = directorio_info.get("archivos", [])
-
-                    for archivo in archivos:
-                        if archivo["nombre"] == filename:
-                            return archivo["blobid"]
-
-            raise FileNotFound(filename=filename)
-
-        except FileNotFound as e:
-            print(f"Error getting blob id for file: {e}")
-        return ""
-
+        with open(self.user_data_file, "r",encoding="utf-8") as f:
+            return json.load(f)
 
     def _update_file_info(self, filename, blob_id):
         user_data = self._load_user_data()
@@ -140,8 +41,90 @@ class Directory(IceDrive.Directory):
                         "blobid": blob_id
                     })
                     directorio_info["archivos"] = archivos
-
             self._save_user_data(user_data)
+
+    def _save_user_data(self, user_data):
+        with open(self.user_data_file, "w",encoding="utf-8") as f:
+            json.dump(user_data, f, indent=2)
+
+    def _get_user(self, user_data):
+        return next((u for u in user_data["usuarios"] if u["nombre"] == self.user_name), None)
+
+    def _update_directory_info(self, user, name, parent_name=None):
+        if user:
+            if "directorios" not in user:
+                user["directorios"] = []
+            user["directorios"].append({
+                "nombre": "/"+name,
+                "padre": parent_name,
+                "archivos": []
+            })
+
+    def getParent(self, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
+        """Return the proxy to the parent directory, if it exists. None in other case."""
+        if self.parent is None:
+            raise IceDrive.RootHasNoParent
+        return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID(self.parent))
+
+    def getChilds(self, current: Ice.Current = None) -> List[str]:
+        """Return a list of names of the directories contained in the directory."""
+        return list(self.childs.keys())
+
+    def getChild(self, name: str, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
+        """Return the proxy to one specific directory inside the current one."""
+        if self.childs.get(name) is None:
+            raise IceDrive.ChildNotExists
+        return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID
+                                                (self.childs.get(name)))
+
+    def createChild(self, name: str, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
+        """Create a new child directory and returns its proxy."""
+        if self.childs.get(name) is not None:
+            raise IceDrive.ChildAlreadyExists
+        child_directory = Directory("/"+name, user_name=self.user_name)
+        child_directory.parent = self
+        self.childs["/"+name] = child_directory
+        user_data = self._load_user_data()
+        user = self._get_user(user_data)
+
+        if user:
+            self._update_directory_info(user, name, self.name)
+            self._save_user_data(user_data)
+
+        return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID(child_directory))
+
+
+    def removeChild(self, name: str, current: Ice.Current = None) -> None:
+        """Remove the child directory with the given name if exists."""
+        child_directory = self.childs.get("/"+name)
+        if child_directory:
+            del self.childs["/"+name]
+            user_data = self._load_user_data()
+            user = self._get_user(user_data)
+            if user:
+                user["directorios"] = [d for d in user.get("directorios", [])
+                                    if d["nombre"] != "/"+name]
+            self._save_user_data(user_data)
+        else:
+            raise IceDrive.ChildNotExists
+
+    def getFiles(self, current: Ice.Current = None) -> List[str]:
+        """Return a list of the files linked inside the current directory."""
+        return list(self.files.keys())
+
+    def getBlobId(self, filename: str, current: Ice.Current = None) -> str:
+        """Return the "blob id" for a given file name inside the directory."""
+        if filename not in self.files:
+            raise IceDrive.FileNotFound
+        user_data = self._load_user_data()
+        user = self._get_user(user_data)
+        for directorio_info in user.get("directorios", []):
+            if directorio_info["nombre"] == self.name:
+                archivos = directorio_info.get("archivos", [])
+                for archivo in archivos:
+                    if archivo["nombre"] == filename:
+                        return archivo["blobid"]
+        return ""
 
     def linkFile(self, filename: str, blob_id: str, current: Ice.Current = None) -> None:
         """Link a file to a given blob_id."""
@@ -152,24 +135,19 @@ class Directory(IceDrive.Directory):
 
     def unlinkFile(self, filename: str, current: Ice.Current = None) -> None:
         """Unlink (remove) a filename from the current directory."""
-        try:
-            if filename not in self.files:
-                raise FileNotFound(filename=filename)
+        if filename not in self.files:
+            raise IceDrive.FileNotFound(filename)
+        del self.files[filename]
+        user_data = self._load_user_data()
+        user = self._get_user(user_data)
+        if user:
+            for directorio_info in user.get("directorios", []):
+                if directorio_info["nombre"] == self.name:
+                    archivos = directorio_info.get("archivos", [])
+                    archivos = [archivo for archivo in archivos if archivo["nombre"] != filename]
+                    directorio_info["archivos"] = archivos
+        self._save_user_data(user_data)
 
-            del self.files[filename]
-
-            user_data = self._load_user_data()
-            user = self._get_user(user_data)
-            if user:
-                for directorio_info in user.get("directorios", []):
-                    if directorio_info["nombre"] == self.name:
-                        archivos = directorio_info.get("archivos", [])
-                        archivos = [archivo for archivo in archivos
-                                    if archivo["nombre"] != filename]
-                        directorio_info["archivos"] = archivos
-                self._save_user_data(user_data)
-        except FileNotFound as e:
-            print(f"Error unlinking file: {e}")
 
 
 class DirectoryService(IceDrive.DirectoryService):
@@ -241,7 +219,7 @@ class DirectoryService(IceDrive.DirectoryService):
             if usuario["nombre"] == user:
                 root_directory_info = usuario["directorios"][0]
                 root_directory = Directory(root_directory_info["nombre"], user)
-                return self.load_directory_info(root_directory, usuario, user_data, user)
+                return self.load_directory_info(root_directory, usuario, user)
         return None
 
     def load_directory_info(self, directory: Directory, user_info: dict,
