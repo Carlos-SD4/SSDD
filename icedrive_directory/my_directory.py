@@ -51,12 +51,12 @@ class DirectoryClient:
                 print(current_directory.getChilds())
 
             elif choice == "2":
-                new_dir_name = input("Ingrese el nombre del nuevo subdirectorio: ")
+                new_dir_name = input("Ingrese el nombre del nuevo subdirectorio (sin la / de ruta): ")
                 new_directory = current_directory.createChild(new_dir_name)
                 print(f"Subdirectorio '{new_dir_name}' creado exitosamente.")
 
             elif choice == "3":
-                dir_to_remove = input("Ingrese el nombre del subdirectorio a eliminar: ")
+                dir_to_remove = input("Ingrese el nombre del subdirectorio a eliminar (sin la / de ruta): ")
                 current_directory.removeChild(dir_to_remove)
                 print(f"Subdirectorio '{dir_to_remove}' eliminado.")
 
@@ -65,7 +65,7 @@ class DirectoryClient:
                 print(current_directory.getFiles())
 
             elif choice == "5":
-                new_dir_name = input("Ingrese el nombre del nuevo directorio: ")
+                new_dir_name = input("Ingrese el nombre del nuevo directorio (sin la / de ruta): ")
                 new_directory = current_directory.getChild("/"+new_dir_name)
                 if new_directory:
                     current_directory = new_directory
