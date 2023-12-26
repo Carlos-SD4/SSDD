@@ -173,7 +173,7 @@ class DirectoryService(IceDrive.DirectoryService):
         usuarios = user_data.get("usuarios", [])
         return next((usuario for usuario in usuarios if usuario["nombre"] == user), None)
 
-    def getRoot(self, user: str, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
+    def getRoot(self, user: IceDrive.UserPrx, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
         """Return the proxy for the root directory of the given user."""
         user_directory = self.user_directories.get(user)
 
