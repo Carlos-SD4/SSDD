@@ -7,6 +7,8 @@ import IceStorm
 import Ice
 from  IceDrive import Discovery
 from .directory import DirectoryService
+import threading
+import time
 
 class DirectoryApp(Ice.Application):
     """Implementation of the Ice.Application for the Directory service."""
@@ -15,6 +17,16 @@ class DirectoryApp(Ice.Application):
         key = 'IceStorm.TopicManager.Proxy'
         proxy = self.communicator().propertyToProxy(key)
         return IceStorm.TopicManagerPrx.checkedCast(proxy)
+
+    def publish_directory_service_periodically(self, directory_service_proxy, directory_topic, interval=5):
+        while True:
+            try:
+                directory_topic.publish(qos={}, handle=directory_service_proxy)
+                logging.info("DirectoryService Proxy republished: %s", directory_service_proxy)
+            except Ice.Exception as ex:
+                logging.error("Error republishing DirectoryService Proxy: %s", str(ex))
+
+            time.sleep(interval)
 
     def run(self, args: List[str]) -> int:
         """Execute the code for the DirectoryApp class."""
@@ -68,7 +80,12 @@ class DirectoryApp(Ice.Application):
 
         logging.info("DirectoryService Proxy: %s", directory_service_proxy)
 
-        directory_topic.getPublisher().subscribeAndGetPublisher(qos, directory_service_proxy)
+        publish_thread = threading.Thread(
+            target=self.publish_directory_service_periodically,
+            args=(directory_service_proxy, directory_topic),
+            daemon=True
+        )
+        publish_thread.start()
 
         self.shutdownOnInterrupt()
         self.communicator().waitForShutdown()
