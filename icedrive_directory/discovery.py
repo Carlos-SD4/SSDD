@@ -26,6 +26,8 @@ class Discovery(IceDrive.Discovery):
         if prx not in self.directory_service_proxies and prx != self.my_prx:
             self.directory_service_proxies.append(prx)
             print(f"Received DirectoryService announcement: {prx.ice_toString()}")
+        else:
+            print("No se ha añadido,es mi proxy")
 
     def announceBlobService(self, prx: IceDrive.BlobServicePrx, current: Ice.Current = None) -> None:
         """Receive a Blob service announcement."""

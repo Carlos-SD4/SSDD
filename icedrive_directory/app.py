@@ -5,26 +5,22 @@ import sys
 from typing import List
 import IceStorm
 import Ice
-from  IceDrive import Discovery
+from .discovery import Discovery
 from .directory import DirectoryService
 import threading
 import time
+import IceDrive
 
 class DirectoryApp(Ice.Application):
     def get_topic_manager(self):
         key = 'IceStorm.TopicManager.Proxy'
         proxy = self.communicator().propertyToProxy(key)
         return IceStorm.TopicManagerPrx.checkedCast(proxy)
-
-    def publish_directory_service_periodically(self, directory_service_proxy, directory_topic, interval=5):
-        while True:
-            try:
-                directory_topic.publish(qos={}, handle=directory_service_proxy)
-                logging.info("DirectoryService Proxy republished: %s", directory_service_proxy)
-            except Ice.Exception as ex:
-                logging.error("Error republishing DirectoryService Proxy: %s", str(ex))
-
-            time.sleep(interval)
+    
+    def publish_service(self,publicador,directory_proxy):
+        publicador.announceDirectoryServicey(directory_proxy)
+        threading.Timer(5.0, self.publish_service, (publicador,directory_proxy)).start()
+        print("Publicado")
 
     def run(self, args: List[str]) -> int:
         topic_mgr = self.get_topic_manager()
@@ -37,25 +33,14 @@ class DirectoryApp(Ice.Application):
             topic = topic_mgr.retrieve(topic_name)
         except IceStorm.NoSuchTopic:
             topic = topic_mgr.create(topic_name)
-        publicador = topic.getPublisher()
+        publicador=IceDrive.DiscoveryPrx.uncheckedCast(topic.getPublisher())
 
-        directory_topic_name = "DirectoryService"
+        directory_topic_name = "DirectoryQuery"
         try:
             directory_topic = topic_mgr.retrieve(directory_topic_name)
         except IceStorm.NoSuchTopic:
             directory_topic = topic_mgr.create(directory_topic_name)
 
-        authentication_topic_name = "Authentication"
-        try:
-            authentication_topic = topic_mgr.retrieve(authentication_topic_name)
-        except IceStorm.NoSuchTopic:
-            authentication_topic = topic_mgr.create(authentication_topic_name)
-
-        blob_topic_name = "BlobService"
-        try:
-            blob_topic = topic_mgr.retrieve(blob_topic_name)
-        except IceStorm.NoSuchTopic:
-            blob_topic = topic_mgr.create(blob_topic_name)
 
         adapter = self.communicator().createObjectAdapter("DirectoryAdapter")
 
@@ -68,25 +53,19 @@ class DirectoryApp(Ice.Application):
         discovery = Discovery(directory_service_proxy)
         discovery_prx = adapter.addWithUUID(discovery)
         qos = {}
-        publicador.subscribeAndGetPublisher(qos, discovery_prx)
+        topic.subscribeAndGetPublisher(qos, discovery_prx)
 
         directory_topic.subscribeAndGetPublisher(qos, discovery_prx)
-        authentication_topic.subscribeAndGetPublisher(qos, discovery_prx)
-        blob_topic.subscribeAndGetPublisher(qos, discovery_prx)
-
-        publish_thread = threading.Thread(
-            target=self.publish_directory_service_periodically,
-            args=(directory_service_proxy, directory_topic),
-            daemon=True
-        )
-        publish_thread.start()
+        directory_service = IceDrive.DirectoryServicePrx.checkedCast(directory_service_proxy)
+        self.publish_service(publicador,directory_service)
 
         self.shutdownOnInterrupt()
         self.communicator().waitForShutdown()
 
+
         directory_topic.unsubscribe(discovery_prx)
-        authentication_topic.unsubscribe(discovery_prx)
-        blob_topic.unsubscribe(discovery_prx)
+
+
 
         return 0
 
