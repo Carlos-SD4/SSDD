@@ -12,6 +12,7 @@ from typing import List
 import json
 import Ice
 import IceDrive
+from .discovery import DiscoveryPersistence
 
 
 class Directory(IceDrive.Directory):
@@ -153,7 +154,17 @@ class Directory(IceDrive.Directory):
 class DirectoryService(IceDrive.DirectoryService):
     """Implementation of the IceDrive.DirectoryService interface."""
 
+    '''Cambios que hay que hacer:
+    -Primero de todo mandar una query al servicio de autenticacion de la lista para ver si el usuario existe
+    -Comprobar que ese proxy este vivo con isAlive
+    -Si esta vivo mandarle la query al servicio de directorio de la lista para ver si existe el directorio raiz
+    -Si no existe, se le crea un directorio raiz con nuestra persistencia y se le devuelve
+    '''
+
+    '''Cambios de BlobService'''
+
     file_path = 'user_data.json'
+    persistencia = DiscoveryPersistence()
 
     def __init__(self):
         self.user_directories: List[str, Directory] = {}

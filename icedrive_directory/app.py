@@ -5,11 +5,12 @@ import sys
 from typing import List
 import IceStorm
 import Ice
-from .discovery import Discovery
+from .discovery import Discovery, DiscoveryPersistence
 from .directory import DirectoryService
 import threading
 import time
 import IceDrive
+
 
 class DirectoryApp(Ice.Application):
     def get_topic_manager(self):
@@ -18,9 +19,12 @@ class DirectoryApp(Ice.Application):
         return IceStorm.TopicManagerPrx.checkedCast(proxy)
     
     def publish_service(self,publicador,directory_proxy):
-        publicador.announceDirectoryServicey(directory_proxy)
-        threading.Timer(5.0, self.publish_service, (publicador,directory_proxy)).start()
-        print("Publicado")
+        try:
+            publicador.announceDirectoryServicey(directory_proxy)
+            threading.Timer(5.0, self.publish_service, (publicador,directory_proxy)).start()
+            print("Publicado")
+        except Ice.CommunicatorDestroyedException:
+            print("Comunicator destruido")
 
     def run(self, args: List[str]) -> int:
         topic_mgr = self.get_topic_manager()
