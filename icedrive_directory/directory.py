@@ -13,6 +13,7 @@ import json
 import Ice
 import IceDrive
 from .discovery import DiscoveryPersistence
+from .delayed_response import DirectoryQueryResponse, DirectoryQuery, DirectoryPersistence
 
 
 class Directory(IceDrive.Directory):
@@ -154,15 +155,6 @@ class Directory(IceDrive.Directory):
 class DirectoryService(IceDrive.DirectoryService):
     """Implementation of the IceDrive.DirectoryService interface."""
 
-    '''Cambios que hay que hacer:
-    -Primero de todo mandar una query al servicio de autenticacion de la lista para ver si el usuario existe
-    -Comprobar que ese proxy este vivo con isAlive
-    -Si esta vivo mandarle la query al servicio de directorio de la lista para ver si existe el directorio raiz
-    -Si no existe, se le crea un directorio raiz con nuestra persistencia y se le devuelve
-    '''
-
-    '''Cambios de BlobService'''
-
     file_path = 'user_data.json'
     persistencia = DiscoveryPersistence()
 
@@ -186,14 +178,28 @@ class DirectoryService(IceDrive.DirectoryService):
 
     def getRoot(self, user: IceDrive.UserPrx, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
         """Return the proxy for the root directory of the given user."""
-        user_directory = self.user_directories.get(user)
+        username = user.getUsername()
+        user_directory = self.user_directories.get(username)
 
         if not user_directory:
-            if not self.does_user_exist(user):
-                self.create_user(user)
+            try:
+                if not self.does_user_exist(user):
+                    #Lanzamos una query al servicio de autenticacion para ver si el usuario existe
+                    authprx = self.persistencia.get_authentication_proxies()
+                    if authprx.isAlive() == True:
+                        directory_query_response_prx = IceDrive.DirectoryQueryResponsePrx.uncheckedCast(current.adapter.addWithUUID(DirectoryQueryResponse()))
+                        directory_query_prx= IceDrive.DirectoryQueryPrx.uncheckedCast(current.adapter.addWithUUID(DirectoryQuery()))
+                        directory_query_prx.rootDirectory(authprx,directory_query_response_prx)
+                        root= DirectoryPersistence.getroot()
+                        return root
+                    else:
+                        self.persistencia.remove_authentication_proxies(authprx)
 
-            user_directory = self.get_root_directory_for_user(user)
-            self.user_directories[user] = user_directory
+                user_directory = self.get_root_directory_for_user(user)
+                self.user_directories[user] = user_directory
+            except ConnectionError():
+                print("Error de conexion")
+                self.persistencia.remove_authentication_proxies(authprx)
 
         return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID(user_directory))
 
@@ -202,25 +208,6 @@ class DirectoryService(IceDrive.DirectoryService):
         user_data = self._load_user_data()
         usuarios = user_data.get("usuarios", [])
         return any(usuario.get("nombre") == user for usuario in usuarios)
-
-    def create_user(self, user: str) -> None:
-        """Create a new user with the given username."""
-        user_data = self._load_user_data()
-
-        nuevo_usuario = {
-            "nombre": user,
-            "id": len(user_data.get("usuarios", [])) + 1,
-            "directorios": [
-                {
-                    "nombre": f"/{user}",
-                    "padre": None,
-                    "archivos": []
-                }
-            ]
-        }
-        user_data.setdefault("usuarios", []).append(nuevo_usuario)
-
-        self._save_user_data(user_data)
 
     def get_root_directory_for_user(self, user: str) -> Directory:
         """Get the root directory for the given user."""
