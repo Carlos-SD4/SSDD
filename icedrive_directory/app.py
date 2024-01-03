@@ -44,11 +44,12 @@ class DirectoryApp(Ice.Application):
             directory_topic = topic_mgr.retrieve(directory_topic_name)
         except IceStorm.NoSuchTopic:
             directory_topic = topic_mgr.create(directory_topic_name)
+            publicadordirectory= directory_topic.getPublisher()
 
 
         adapter = self.communicator().createObjectAdapter("DirectoryAdapter")
 
-        directory_service_impl = DirectoryService()
+        directory_service_impl = DirectoryService(publicadordirectory)
         directory_service_proxy = adapter.addWithUUID(directory_service_impl)
         adapter.activate()
 
@@ -62,6 +63,8 @@ class DirectoryApp(Ice.Application):
         directory_topic.subscribeAndGetPublisher(qos, discovery_prx)
         directory_service = IceDrive.DirectoryServicePrx.checkedCast(directory_service_proxy)
         self.publish_service(publicador,directory_service)
+
+        
 
         self.shutdownOnInterrupt()
         self.communicator().waitForShutdown()
