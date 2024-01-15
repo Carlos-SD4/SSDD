@@ -21,16 +21,14 @@ class Discovery(IceDrive.Discovery):
             self.discovery_persistence.set_authentication_proxies(prx)
             print(f"Received Authentication announcement: {prx.ice_toString()}")
 
-    def announceDirectoryServicey(self, prx: IceDrive.DirectoryServicePrx, current: Ice.Current = None) -> None:
+    def announceDirectoryService(self, prx: IceDrive.DirectoryServicePrx, current: Ice.Current = None) -> None:
         """Receive a Directory service announcement."""
 
         if prx not in self.discovery_persistence.get_directory_service_proxies() and prx != self.my_prx:
             self.discovery_persistence.set_directory_service_proxies(prx)
             print(f"Received DirectoryService announcement: {prx.ice_toString()}")
         else:
-            print("No se ha añadido el siguiente proxy por uno de los siguientes motivos:")
-            print("-Es mi propio proxy")
-            print("-Ya se encuentra en la lista de proxies")
+            return None
 
     def announceBlobService(self, prx: IceDrive.BlobServicePrx, current: Ice.Current = None) -> None:
         """Receive a Blob service announcement."""

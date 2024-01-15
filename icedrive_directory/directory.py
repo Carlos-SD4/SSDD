@@ -188,6 +188,17 @@ class Directory(IceDrive.Directory):
                     directorio_info["archivos"] = archivos
         self._save_user_data(user_data)
 
+    def getPath(self, current: Ice.Current = None) -> str:
+        """Return the path of the directory."""
+        if self.user.isAlive() == True:
+            path=''
+            while self.parent is not None:
+                path=self.parent.name+path
+            return path
+        else:
+            print("El usuario no esta activo")
+            return None
+
 
 
 class DirectoryService(IceDrive.DirectoryService):
@@ -223,8 +234,7 @@ class DirectoryService(IceDrive.DirectoryService):
 
         if not user_directory:
             try:
-                if not self.does_user_exist(user):
-                    #Lanzamos una query al servicio de autenticacion para ver si el usuario existe
+                if not self.does_user_exist(username):
                     authprx = self.persistencia.get_authentication_proxies()[0]
                     if authprx.isAlive() == True:
                         directory_query_response_prx = IceDrive.DirectoryQueryResponsePrx.uncheckedCast(current.adapter.addWithUUID(DirectoryQueryResponse()))
@@ -234,9 +244,8 @@ class DirectoryService(IceDrive.DirectoryService):
                         return root
                     else:
                         self.persistencia_discovery.remove_authentication_proxies(authprx)
-
                 user_directory = self.get_root_directory_for_user(username, user)
-                self.user_directories[user] = user_directory
+                self.user_directories[username] = user_directory
             except ConnectionError():
                 print("Error de conexion")
                 self.persistencia_discovery.remove_authentication_proxies(authprx)
@@ -256,12 +265,12 @@ class DirectoryService(IceDrive.DirectoryService):
         for usuario in user_data["usuarios"]:
             if usuario["nombre"] == user_name:
                 root_directory_info = usuario["directorios"][0]
-                root_directory = Directory(root_directory_info["nombre"], user_name,userprx)
-                return self.load_directory_info(root_directory, usuario)
+                root_directory = Directory(root_directory_info["nombre"], user_name, userprx)
+                return self.load_directory_info(root_directory, usuario,user_name,userprx)
         return None
 
     def load_directory_info(self, directory: Directory, user_info: dict,
-                        user: str, is_root: bool = True) -> Directory:
+                        user: str,userprx, is_root: bool = True) -> Directory:
         """Load directory information from user data."""
         user_directories = user_info.get("directorios", [])
 
@@ -276,7 +285,7 @@ class DirectoryService(IceDrive.DirectoryService):
                     directory.files[archivo_nombre] = archivo_blobid
 
             elif item_info["padre"] == directory.name:
-                child_directory = Directory(item_name, user)
+                child_directory = Directory(item_name, user,userprx)
                 child_directory.parent = directory
                 directory.childs[item_name] = child_directory
 
@@ -285,5 +294,5 @@ class DirectoryService(IceDrive.DirectoryService):
                     archivo_blobid = archivo_info["blobid"]
                     child_directory.files[archivo_nombre] = archivo_blobid
 
-                self.load_directory_info(child_directory, user_info, user, is_root=False)
+                self.load_directory_info(child_directory, user_info, user,userprx, is_root=False)
         return directory

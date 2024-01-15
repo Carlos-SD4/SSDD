@@ -20,7 +20,7 @@ class DirectoryApp(Ice.Application):
     
     def publish_service(self,publicador,directory_proxy):
         try:
-            publicador.announceDirectoryServicey(directory_proxy)
+            publicador.announceDirectoryService(directory_proxy)
             threading.Timer(5.0, self.publish_service, (publicador,directory_proxy)).start()
             print("Publicado")
         except Ice.CommunicatorDestroyedException:
@@ -32,19 +32,19 @@ class DirectoryApp(Ice.Application):
             print('Invalid proxy')
             return 2
 
-        topic_name = "Discovery"
+        topic_name = "discovery"
         try:
             topic = topic_mgr.retrieve(topic_name)
         except IceStorm.NoSuchTopic:
             topic = topic_mgr.create(topic_name)
         publicador=IceDrive.DiscoveryPrx.uncheckedCast(topic.getPublisher())
 
-        directory_topic_name = "DirectoryQuery"
+        directory_topic_name = "directory"
         try:
             directory_topic = topic_mgr.retrieve(directory_topic_name)
         except IceStorm.NoSuchTopic:
             directory_topic = topic_mgr.create(directory_topic_name)
-            publicadordirectory= directory_topic.getPublisher()
+        publicadordirectory= directory_topic.getPublisher()
 
 
         adapter = self.communicator().createObjectAdapter("DirectoryAdapter")
@@ -68,9 +68,6 @@ class DirectoryApp(Ice.Application):
 
         self.shutdownOnInterrupt()
         self.communicator().waitForShutdown()
-
-
-        directory_topic.unsubscribe(discovery_prx)
 
 
 

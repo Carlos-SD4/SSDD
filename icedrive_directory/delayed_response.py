@@ -3,8 +3,7 @@
 import Ice
 import IceDrive
 import json
-from .directory import Directory
-
+from IceDrive import Directory
 
 class DirectoryQueryResponse(IceDrive.DirectoryQueryResponse):
     """Query response receiver."""
