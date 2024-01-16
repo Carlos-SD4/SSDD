@@ -7,9 +7,14 @@ from IceDrive import Directory
 
 class DirectoryQueryResponse(IceDrive.DirectoryQueryResponse):
     """Query response receiver."""
+    def __init__(self, future: Ice.Future) -> None:
+        """Initialize a query response handler."""
+        self.future_callback = future
+
     def rootDirectoryResponse(self, root: IceDrive.DirectoryPrx, current: Ice.Current = None) -> None:
         """Receive a Directory when other service instance knows the user."""
-        DirectoryPersistence.save(root)
+        self.future_callback.set_result(root)
+        current.adapter.remove(current.id)
 
 
 class DirectoryQuery(IceDrive.DirectoryQuery):
@@ -48,13 +53,3 @@ class DirectoryQuery(IceDrive.DirectoryQuery):
         except FileNotFoundError:
             return {}
 
-
-class DirectoryPersistence():
-    """Persistence class for service discovery."""
-    root = None
-
-    def save(self,root: IceDrive.DirectoryPrx):
-        self.root= root
-
-    def getroot(self):
-        return self.root

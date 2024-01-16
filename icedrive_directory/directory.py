@@ -14,6 +14,8 @@ import Ice
 import IceDrive
 from .discovery import DiscoveryPersistence
 from .delayed_response import DirectoryQueryResponse, DirectoryQuery, DirectoryPersistence
+import time
+import threading
 
 
 class Directory(IceDrive.Directory):
@@ -71,16 +73,16 @@ class Directory(IceDrive.Directory):
                 raise IceDrive.RootHasNoParent
             return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID(self.parent))
         else:
-            print("El usuario no esta activo")
-            return None
+            self.persistencia_discovery.remove_authentication_proxies(self.user)
+            raise IceDrive.TemporaryUnavailable("AuthenticationService")
 
     def getChilds(self, current: Ice.Current = None) -> List[str]:
         """Return a list of names of the directories contained in the directory."""
         if self.user.isAlive() == True:
             return list(self.childs.keys())
         else:
-            print("El usuario no esta activo")
-            return None
+            self.persistencia_discovery.remove_authentication_proxies(self.user)
+            raise IceDrive.TemporaryUnavailable("AuthenticationService")
 
     def getChild(self, name: str, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
         """Return the proxy to one specific directory inside the current one."""
@@ -90,8 +92,8 @@ class Directory(IceDrive.Directory):
             return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID
                                                 (self.childs.get(name)))
         else:
-            print("El usuario no esta activo")
-            return None
+            self.persistencia_discovery.remove_authentication_proxies(self.user)
+            raise IceDrive.TemporaryUnavailable("AuthenticationService")
 
     def createChild(self, name: str, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
         """Create a new child directory and returns its proxy."""
@@ -108,8 +110,8 @@ class Directory(IceDrive.Directory):
                 self._update_directory_info(user, name, self.name)
                 self._save_user_data(user_data)
         else:
-            print("El usuario no esta activo")
-            return None
+            self.persistencia_discovery.remove_authentication_proxies(self.user)
+            raise IceDrive.TemporaryUnavailable("AuthenticationService")
 
         return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID(child_directory))
 
@@ -129,8 +131,8 @@ class Directory(IceDrive.Directory):
             else:
                 raise IceDrive.ChildNotExists
         else:
-            print("El usuario no esta activo")
-            return None
+            self.persistencia_discovery.remove_authentication_proxies(self.user)
+            raise IceDrive.TemporaryUnavailable("AuthenticationService")
 
     def getFiles(self, current: Ice.Current = None) -> List[str]:
         """Return a list of the files linked inside the current directory."""
@@ -155,9 +157,8 @@ class Directory(IceDrive.Directory):
 
         blobprx=self.persistencia_discovery.get_blob_service_proxies()[0]
         if ConnectionError:
-            print("Error de conexion")
             self.persistencia_discovery.remove_blob_service_proxies(blobprx)
-            raise IceDrive.TemporaryUnavailable(blobprx)
+            raise IceDrive.TemporaryUnavailable("BlobService")
         blobprx.link(blob_id)
 
         if filename in self.files:
@@ -170,9 +171,8 @@ class Directory(IceDrive.Directory):
 
         blobprx=self.persistencia_discovery.get_blob_service_proxies()[0]
         if ConnectionError:
-            print("Error de conexion")
             self.persistencia_discovery.remove_blob_service_proxies(blobprx)
-            raise IceDrive.TemporaryUnavailable(blobprx)
+            raise IceDrive.TemporaryUnavailable("BlobService")
         blobprx.unlink(self.files[filename])
 
         if filename not in self.files:
@@ -196,8 +196,7 @@ class Directory(IceDrive.Directory):
                 path=self.parent.name+path
             return path
         else:
-            print("El usuario no esta activo")
-            return None
+            raise IceDrive.TemporaryUnavailable("AuthenticationService")
 
 
 
@@ -206,11 +205,12 @@ class DirectoryService(IceDrive.DirectoryService):
 
     file_path = 'user_data.json'
     persistencia_discovery = DiscoveryPersistence()
-    peristencia_directory = DirectoryPersistence()
+
 
     def __init__(self,publicador):
         self.user_directories: List[str, Directory] = {}
         self.publicador=publicador
+        self.expected_responses = {}
 
     def _load_user_data(self):
         try:
@@ -226,31 +226,51 @@ class DirectoryService(IceDrive.DirectoryService):
     def _get_user(user_data, user):
         usuarios = user_data.get("usuarios", [])
         return next((usuario for usuario in usuarios if usuario["nombre"] == user), None)
+    
+    def remove_object_if_exists(self, adapter: Ice.ObjectAdapter, identity: Ice.Identity) -> None:
+        """Remove an object from the adapter if exists."""
+        if adapter.find(identity) is not None:
+            adapter.remove(identity)
+            self.expected_responses[identity].set_exception(IceDrive.TemporaryUnavailable)
+
+        del self.expected_responses[identity]
+
+    def prepare_amd_response_callback(self, current: Ice.Current) -> IceDrive.DirectoryQueryResponsePrx:
+        """Prepare an Ice.Future object and send the query."""
+        future = Ice.Future()
+        response = DirectoryQueryResponse(future)
+        prx = current.adapter.addWithUUID(response)
+        query_response_prx = IceDrive.DirectoryQueryResponsePrx.uncheckedCast(prx)
+
+        identity = query_response_prx.ice_getIdentity()
+        self.expected_responses[identity] = future
+        threading.Timer(5.0, self.remove_object_if_exists, (current.adapter, identity)).start()
+        return query_response_prx
 
     def getRoot(self, user: IceDrive.UserPrx, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
         """Return the proxy for the root directory of the given user."""
-        username = user.getUsername()
-        user_directory = self.user_directories.get(username)
 
-        if not user_directory:
-            try:
+        #Sacar un proxy de autenticacion para ejecutar veryfy con el objeto user y comprobar que sea valido o legitimo
+        #revisar enunciado con la practica
+
+
+        if user.isAlive() == True:
+            username = user.getUsername()
+            user_directory = self.user_directories.get(username)
+
+            if not user_directory:
                 if not self.does_user_exist(username):
-                    authprx = self.persistencia.get_authentication_proxies()[0]
-                    if authprx.isAlive() == True:
-                        directory_query_response_prx = IceDrive.DirectoryQueryResponsePrx.uncheckedCast(current.adapter.addWithUUID(DirectoryQueryResponse()))
-                        self.publicador.announceDirectoryServicey(directory_query_response_prx)
-                        root = self.peristencia_directory.getroot()
-                        self.persistencia_discovery.remove_authentication_proxies(authprx)
-                        return root
-                    else:
-                        self.persistencia_discovery.remove_authentication_proxies(authprx)
-                user_directory = self.get_root_directory_for_user(username, user)
-                self.user_directories[username] = user_directory
-            except ConnectionError():
-                print("Error de conexion")
-                self.persistencia_discovery.remove_authentication_proxies(authprx)
+                    query_response_prx = self.prepare_amd_response_callback(current)
+                    self.publicador.announceDirectoryService(query_response_prx)
+                    #si tras los 5 segundos no se ha recibido respuesta se crea un usuario
+                else:
+                    user_directory = self.get_root_directory_for_user(username, user)
+                    self.user_directories[username] = user_directory
 
-        return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID(user_directory))
+            return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID(user_directory))
+        else:
+            self.persistencia_discovery.remove_authentication_proxies(user)
+            raise IceDrive.TemporaryUnavailable("AuthenticationService")
 
     def does_user_exist(self, user: str) -> bool:
         """Check if the user exists in the user data."""
