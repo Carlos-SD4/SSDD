@@ -250,9 +250,17 @@ class DirectoryService(IceDrive.DirectoryService):
     def getRoot(self, user: IceDrive.UserPrx, current: Ice.Current = None) -> IceDrive.DirectoryPrx:
         """Return the proxy for the root directory of the given user."""
 
-        #Sacar un proxy de autenticacion para ejecutar veryfy con el objeto user y comprobar que sea valido o legitimo
-        #revisar enunciado con la practica
+        valid_user = False
 
+        for autprx in self.persistencia_discovery.get_authentication_proxies():
+            if autprx.verifyUser(user):
+                valid_user = True
+                break
+            else:
+                self.persistencia_discovery.remove_authentication_proxies(autprx)
+
+        if not valid_user:
+            raise IceDrive.TemporaryUnavailable("AuthenticationService")
 
         if user.isAlive() == True:
             username = user.getUsername()
@@ -262,15 +270,12 @@ class DirectoryService(IceDrive.DirectoryService):
                 if not self.does_user_exist(username):
                     query_response_prx = self.prepare_amd_response_callback(current)
                     self.publicador.announceDirectoryService(query_response_prx)
-                    #si tras los 5 segundos no se ha recibido respuesta se crea un usuario
+                    self.create_user(username)
                 else:
                     user_directory = self.get_root_directory_for_user(username, user)
                     self.user_directories[username] = user_directory
 
             return IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID(user_directory))
-        else:
-            self.persistencia_discovery.remove_authentication_proxies(user)
-            raise IceDrive.TemporaryUnavailable("AuthenticationService")
 
     def does_user_exist(self, user: str) -> bool:
         """Check if the user exists in the user data."""
@@ -288,6 +293,25 @@ class DirectoryService(IceDrive.DirectoryService):
                 root_directory = Directory(root_directory_info["nombre"], user_name, userprx)
                 return self.load_directory_info(root_directory, usuario,user_name,userprx)
         return None
+
+    def create_user(self, user: str) -> None:
+        """Create a new user with the given username."""
+        user_data = self._load_user_data()
+
+        nuevo_usuario = {
+            "nombre": user,
+            "id": len(user_data.get("usuarios", [])) + 1,
+            "directorios": [
+                {
+                    "nombre": f"/{user}",
+                    "padre": None,
+                    "archivos": []
+                }
+            ]
+        }
+        user_data.setdefault("usuarios", []).append(nuevo_usuario)
+
+        self._save_user_data(user_data)
 
     def load_directory_info(self, directory: Directory, user_info: dict,
                         user: str,userprx, is_root: bool = True) -> Directory:
