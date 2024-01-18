@@ -5,13 +5,17 @@ import IceDrive
 import json
 from IceDrive import Directory
 
+
 class DirectoryQueryResponse(IceDrive.DirectoryQueryResponse):
     """Query response receiver."""
+
     def __init__(self, future: Ice.Future) -> None:
         """Initialize a query response handler."""
         self.future_callback = future
 
-    def rootDirectoryResponse(self, root: IceDrive.DirectoryPrx, current: Ice.Current = None) -> None:
+    def rootDirectoryResponse(
+        self, root: IceDrive.DirectoryPrx, current: Ice.Current = None
+    ) -> None:
         """Receive a Directory when other service instance knows the user."""
         self.future_callback.set_result(root)
         current.adapter.remove(current.id)
@@ -21,12 +25,20 @@ class DirectoryQuery(IceDrive.DirectoryQuery):
 
     file_path = "user_data.json"
     """Query receiver."""
-    def rootDirectory(self, user: IceDrive.UserPrx, response: IceDrive.DirectoryQueryResponsePrx, current: Ice.Current = None) -> None:
+
+    def rootDirectory(
+        self,
+        user: IceDrive.UserPrx,
+        response: IceDrive.DirectoryQueryResponsePrx,
+        current: Ice.Current = None,
+    ) -> None:
         """Receive a query about the user's root directory."""
-        nombre=user.getUsername()
+        nombre = user.getUsername()
         if self.does_user_exist(nombre) == True:
             root_directory = self.get_root_directory_for_user(nombre)
-            root_directoryprx= IceDrive.DirectoryPrx.uncheckedCast(current.adapter.addWithUUID(root_directory))
+            root_directoryprx = IceDrive.DirectoryPrx.uncheckedCast(
+                current.adapter.addWithUUID(root_directory)
+            )
             response.rootDirectoryResponse(root_directoryprx)
 
     def does_user_exist(self, user: str) -> bool:
@@ -52,4 +64,3 @@ class DirectoryQuery(IceDrive.DirectoryQuery):
                 return json.load(file)
         except FileNotFoundError:
             return {}
-
