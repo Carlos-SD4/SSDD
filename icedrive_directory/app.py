@@ -34,14 +34,14 @@ class DirectoryApp(Ice.Application):
             print("Invalid proxy")
             return 2
 
-        topic_name = "Discovery"
+        topic_name = "discovery"
         try:
             topic = topic_mgr.retrieve(topic_name)
         except IceStorm.NoSuchTopic:
             topic = topic_mgr.create(topic_name)
         publicador = IceDrive.DiscoveryPrx.uncheckedCast(topic.getPublisher())
 
-        directory_topic_name = "DirectoryQuery-"
+        directory_topic_name = "directory"
         try:
             directory_topic = topic_mgr.retrieve(directory_topic_name)
         except IceStorm.NoSuchTopic:
