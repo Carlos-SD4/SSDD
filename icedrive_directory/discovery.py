@@ -22,7 +22,7 @@ class Discovery(IceDrive.Discovery):
             self.discovery_persistence.set_authentication_proxies(prx)
             print(f"Received Authentication announcement: {prx.ice_toString()}")
 
-    def announceDirectoryServicey(
+    def announceDirectoryService(
         self, prx: IceDrive.DirectoryServicePrx, current: Ice.Current = None
     ) -> None:
         """Receive a Directory service announcement."""
